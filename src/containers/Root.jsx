@@ -3,108 +3,34 @@ import PropTypes from 'prop-types';
 import { observer } from 'mobx-react';
 // import DevTools from 'mobx-react-devtools';
 
-import validatorjs from 'validatorjs';
-import MobxReactForm from 'mobx-react-form';
-
-import users from '../stores/users';
-import posts from '../stores/posts';
-
-import Loading from './Loading';
 import Posts from './Posts';
-
-const plugins = { dvr: validatorjs };
-
-const fields = [
-  {
-    name: 'title',
-    label: 'Title',
-    placeholder: 'Insert title',
-    rules: 'required',
-  },
-  {
-    name: 'body',
-    label: 'Body',
-    placeholder: 'Insert body',
-    rules: 'required|between:1,200',
-  },
-];
-
-class MyForm extends MobxReactForm {
-
-  onSuccess(form) {
-    // get field values
-    // console.log('Form Values!', form.values());
-    posts.create({
-      ...form.values(),
-    });
-  }
-
-  onError(form) {
-    // get all form errors
-    console.log('All form errors', form.errors());
-    // invalidate the form with a custom error message
-    form.invalidate('This is a generic error message!');
-  }
-}
 
 @observer
 class App extends Component {
   constructor(props) {
     super(props);
-    this.mformInstance = new MyForm({ fields }, { plugins });
+    this.appState = props.appState;
+    this.handleAddRow = this.handleAddRow.bind(this);
   }
   componentWillMount() {
-    users.fetch();
-    posts.fetch();
+    this.appState.fetchPosts();
   }
   onReset = () => {
-    this.props.appState.resetTimer();
+    this.appState.resetTimer();
   }
-  renderContent = () => {
-    if (users.isRequest('fetching')) {
-      return (
-        <Loading label="application" />
-      );
-    }
-
-    return <Posts posts={posts} />;
+  handleAddRow() {
+    this.appState.addEmptyPost();
   }
   render() {
-    const titleField = this.mformInstance.$('title');
-    const bodyField = this.mformInstance.$('body');
     return (
       <div>
         <button onClick={this.onReset}>
-          Seconds passed: {this.props.appState.timer}
+          Seconds passed: {this.appState.timer}
         </button>
         <hr />
-        <form onSubmit={this.mformInstance.onSubmit}>
-          <div>
-            <label htmlFor={titleField.id}>
-              {titleField.label}
-            </label>
-            <input
-              {...titleField.bind()}
-            />
-            <p className="error">{titleField.error}</p>
-          </div>
-          <div>
-            <label htmlFor={bodyField.id}>
-              {bodyField.label}
-            </label>
-            <textarea
-              {...bodyField.bind()}
-            />
-            <p className="error">{bodyField.error}</p>
-          </div>
-          <button type="submit" onClick={this.mformInstance.onSubmit}>Submit</button>
-          <button type="button" onClick={this.mformInstance.onClear}>Clear</button>
-          <button type="button" onClick={this.mformInstance.onReset}>Reset</button>
-
-          <p className="error">{this.mformInstance.error}</p>
-        </form>
+        <button onClick={this.handleAddRow}>Add row</button>
         <div className="App__body">
-          {this.renderContent()}
+          <Posts posts={this.appState.posts} />
         </div>
         {/* <DevTools />*/}
       </div>
@@ -116,6 +42,7 @@ App.propTypes = {
   appState: PropTypes.shape({
     timer: PropTypes.number.isRequired,
     resetTimer: PropTypes.func.isRequired,
+    fetchPosts: PropTypes.func.isRequired,
   }).isRequired,
 };
 
